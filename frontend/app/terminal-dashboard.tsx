@@ -201,14 +201,27 @@ const CATEGORY_ORDER = [
   "placemaking",
 ] as const;
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "http://127.0.0.1:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
+
+function getApiBaseUrl() {
+  if (API_BASE_URL) {
+    return API_BASE_URL;
+  }
+
+  if (typeof window !== "undefined") {
+    return window.location.origin.replace(/\/$/, "");
+  }
+
+  return "";
+}
 
 function resolveApiUrl(path: string) {
   if (/^https?:\/\//.test(path)) {
     return path;
   }
-  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
@@ -219,7 +232,7 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(resolveApiUrl(path), {
     cache: "no-store",
     headers,
     ...init,
@@ -327,7 +340,7 @@ function buildTerminalText(args: {
     "FORECAST // MUNICIPAL SIGNAL CONSOLE",
     "====================================",
     "",
-    `API BASE      : ${API_BASE_URL}`,
+    `API BASE      : ${getApiBaseUrl() || "same-origin"}`,
     `DATASETS      : ${scores?.dataset_count ?? "--"}`,
     `LAST REFRESH  : ${formatTimestamp(specialists?.last_updated ?? scores?.last_updated)}`,
     "",
