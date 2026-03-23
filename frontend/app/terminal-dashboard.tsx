@@ -193,13 +193,165 @@ type TerminalViewMode = "intelligence" | "ingest";
 type DatasourceMode = "endpoint" | "file" | "webscrape" | "transcript";
 type ForecastMode = "time_to_target" | "required_rate";
 
+const DEMO_PROMPT =
+  "Why is transportation the highest category and show the clip that is sourced from er-watch";
+const DEMO_VIDEO_PATH = "/api/demo-assets/er-watch";
+const DEMO_VIDEO_LABEL = "ER Watch source clip";
+const DEMO_VIDEO_FILENAME = "20260322T191538Z-er-watch.webm";
+const DEMO_STATUS = {
+  mode: "LIVE",
+  sync: "IDLE",
+  timestamp: "Mar 22, 2026, 7:39 p.m.",
+  datasets: 43,
+  apiBase: "http://127.0.0.1:8000",
+  specialistRuns: 5,
+} as const;
+const DEMO_ASSISTANT_RESPONSE = [
+  "DEMO MODE",
+  "This chat experience is a scripted demo, and the response is tailored for the prompt:",
+  `"${DEMO_PROMPT}"`,
+  "",
+  "Transportation appears as the highest category because its supporting datasets combine a comparatively strong aggregate score with a strong specialist assessment. In the scorecard, that usually means the transportation evidence is landing more consistently against benchmark expectations than the other categories, and the resulting benchmark and similarity signals are staying high enough to keep the final blended score on top.",
+  "",
+  "For this demo, the key takeaway is that transportation is being presented as the strongest category because the dashboard is surfacing it as the best-aligned category against the current benchmark framework, while housing, healthcare, and employment show more visible drag or weaker benchmark alignment.",
+  "",
+  "ER Watch sourcing clip:",
+  DEMO_VIDEO_PATH,
+].join("\n");
+
 const CATEGORY_ORDER = [
   "housing",
   "employment",
   "transportation",
   "healthcare",
   "placemaking",
+  ] as const;
+
+const DEMO_SPECIALIST_DETAILS = {
+  healthcare: {
+    agent_name: "healthcare_specialist_agent",
+    confidence: 0.6,
+    rationale:
+      'The current aggregate score of 49.38 indicates that the healthcare system is in the "Needs Attention" category. Key metrics such as emergency response times and primary care physician availability suggest room for improvement. The evidence shows that some benchmark thresholds are being approached, but the category remains below the desired trajectory.',
+  },
+} as const;
+
+const DEMO_CATEGORY_VALUES = {
+  housing: {
+    aggregate: 48.98,
+    specialistScore: 46.5,
+    statusLabel: "Needs Attention",
+  },
+  employment: {
+    aggregate: 52.8,
+    specialistScore: 50,
+    statusLabel: "In Progress",
+  },
+  transportation: {
+    aggregate: 56.54,
+    specialistScore: 56,
+    statusLabel: "In Progress",
+  },
+  healthcare: {
+    aggregate: 49.38,
+    specialistScore: 49,
+    statusLabel: "Needs Attention",
+  },
+  placemaking: {
+    aggregate: 59.36,
+    specialistScore: 59,
+    statusLabel: "In Progress",
+  },
+} as const;
+
+function getCategoryDemoValue(category: string) {
+  return DEMO_CATEGORY_VALUES[category as keyof typeof DEMO_CATEGORY_VALUES];
+}
+
+function getDemoSpecialist(category: string): SpecialistScore | null {
+  const demoValue = getCategoryDemoValue(category);
+  if (!demoValue) {
+    return null;
+  }
+
+  const specialistDetail =
+    DEMO_SPECIALIST_DETAILS[category as keyof typeof DEMO_SPECIALIST_DETAILS];
+
+  return {
+    id: `demo-${category}`,
+    category,
+    agent_name: specialistDetail?.agent_name ?? `${category}_specialist_agent`,
+    score: demoValue.specialistScore,
+    status_label: demoValue.statusLabel,
+    confidence: specialistDetail?.confidence ?? 0.6,
+    rationale: specialistDetail?.rationale ?? `Demo specialist narrative for ${category}.`,
+    benchmark_highlights: [],
+    recommendations: [],
+    supporting_evidence: [],
+    source_dataset_ids: [],
+    created_at: null,
+  };
+}
+
+const DEMO_RELEVANT_SOURCES = [
+  {
+    id: "demo-healthcare-source-1",
+    title: "Waterloo Region Healthcare and Urban Planning Benchmark Dashboard",
+    input_type: "csv",
+    final_score: 56.61,
+    similarity: 0.572,
+    benchmark_eval: 0.989,
+    geography: "WATERLOO REGION",
+    time_period: "2026-04",
+    created_at: "2026-03-22T11:50:00-04:00",
+  },
+  {
+    id: "demo-healthcare-source-2",
+    title: "Waterloo Region Healthcare and Urban Planning Benchmark Dashboard",
+    input_type: "csv",
+    final_score: 56.04,
+    similarity: 0.572,
+    benchmark_eval: 0.989,
+    geography: "WATERLOO REGION",
+    time_period: "2026-04",
+    created_at: "2026-03-22T11:50:00-04:00",
+  },
 ] as const;
+
+const DEMO_REGISTRY_ITEMS = [
+  { id: "demo-reg-1", source_ref: "Mayor Interview, Marc...", input_type: "text", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-2", source_ref: "Conversation with The...", input_type: "text", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-3", source_ref: "emergency room health...", input_type: "text", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-4", source_ref: "/Users/marc/Forecast/...", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-5", source_ref: "waterloo_plus_14", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-6", source_ref: "waterloo_benchmark_20", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-7", source_ref: "waterloo_plus_13", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-8", source_ref: "waterloo_benchmark_19", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-9", source_ref: "waterloo_plus_12", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-10", source_ref: "waterloo_benchmark_18", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+  { id: "demo-reg-11", source_ref: "waterloo_plus_11", input_type: "csv", status: "comple...", created_at: "Mar 22, ..." },
+] as const;
+
+const DEMO_PROCESS_ENTRIES = [
+  {
+    id: "demo-process-1",
+    tone: "info" as const,
+    message: "forecast ready -> healthcare (time_to_target)",
+    createdAt: "2026-03-22T20:26:00-04:00",
+  },
+  {
+    id: "demo-process-2",
+    tone: "info" as const,
+    message: "forecast ready -> healthcare (time_to_target)",
+    createdAt: "2026-03-22T20:26:00-04:00",
+  },
+] as const;
+
+const DEMO_CHAT_PREVIEW = {
+  role: "user" as const,
+  content:
+    "why is housing the lowest scored category? How is it calculated. Also I saw that er-watch is used as a source, show the clip for the data-filtering.",
+};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") ?? "";
 
@@ -334,22 +486,24 @@ function buildTerminalText(args: {
   selectedDataset: DatasetDetailResponse | null;
 }) {
   const { scores, specialists, selectedCategory, selectedDataset } = args;
-  const specialist = specialists?.scores[selectedCategory] ?? null;
+  const specialist = specialists?.scores[selectedCategory] ?? getDemoSpecialist(selectedCategory);
 
   const lines = [
     "FORECAST // MUNICIPAL SIGNAL CONSOLE",
     "====================================",
     "",
-    `API BASE      : ${getApiBaseUrl() || "same-origin"}`,
-    `DATASETS      : ${scores?.dataset_count ?? "--"}`,
-    `LAST REFRESH  : ${formatTimestamp(specialists?.last_updated ?? scores?.last_updated)}`,
+    `API BASE      : ${DEMO_STATUS.apiBase}`,
+    `DATASETS      : ${DEMO_STATUS.datasets}`,
+    `LAST REFRESH  : ${DEMO_STATUS.timestamp}`,
     "",
     "CATEGORY SCOREBOARD",
     "-------------------",
     ...CATEGORY_ORDER.map((category) => {
-      const aggregate = scores?.scores[category];
-      const specialistScore = specialists?.scores[category]?.score;
-      const specialistBand = specialists?.scores[category]?.status_label ?? "NO RUN";
+      const demoValue = getCategoryDemoValue(category);
+      const aggregate = scores?.scores[category] ?? demoValue?.aggregate;
+      const specialistScore = specialists?.scores[category]?.score ?? demoValue?.specialistScore;
+      const specialistBand =
+        specialists?.scores[category]?.status_label ?? demoValue?.statusLabel ?? "NO RUN";
       return `${category.toUpperCase().padEnd(16)} agg=${String(
         aggregate?.toFixed?.(2) ?? "--",
       ).padStart(6)} | specialist=${String(specialistScore ?? "--").padStart(5)} | band=${specialistBand}`;
@@ -378,7 +532,6 @@ function buildTerminalText(args: {
   ];
 
   if (!selectedDataset) {
-    lines.push("", "SELECTED DATASET", "----------------", "No dataset selected.");
     return lines.join("\n");
   }
 
@@ -411,14 +564,14 @@ export function TerminalDashboard() {
   const [scores, setScores] = useState<ScoresResponse | null>(null);
   const [specialists, setSpecialists] = useState<SpecialistScoresResponse | null>(null);
   const [datasets, setDatasets] = useState<DatasetListResponse | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>("housing");
+  const [selectedCategory, setSelectedCategory] = useState<string>("healthcare");
   const [selectedDatasetId, setSelectedDatasetId] = useState<string | null>(null);
   const [selectedDataset, setSelectedDataset] = useState<DatasetDetailResponse | null>(null);
   const [relevantSources, setRelevantSources] = useState<RelevantDatasetItem[]>([]);
   const [chatDraft, setChatDraft] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
-  const [processEntries, setProcessEntries] = useState<ProcessEntry[]>([]);
-  const [showProcessPanel, setShowProcessPanel] = useState(false);
+  const [processEntries, setProcessEntries] = useState<ProcessEntry[]>([...DEMO_PROCESS_ENTRIES]);
+  const [showProcessPanel, setShowProcessPanel] = useState(true);
   const [terminalViewMode, setTerminalViewMode] = useState<TerminalViewMode>("intelligence");
   const [isChatWorkspaceOpen, setIsChatWorkspaceOpen] = useState(false);
   const [isSourceInspectorOpen, setIsSourceInspectorOpen] = useState(false);
@@ -448,7 +601,7 @@ export function TerminalDashboard() {
     ].join("\n"),
   );
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isChatting, setIsChatting] = useState(false);
   const [runningCategory, setRunningCategory] = useState<string | null>(null);
@@ -493,15 +646,6 @@ export function TerminalDashboard() {
       setSelectedDatasetId((current) =>
         current && datasetsPayload.items.some((item) => item.id === current) ? current : firstDatasetId,
       );
-
-      if (!specialistsPayload.scores[selectedCategory]) {
-        const fallbackCategory = CATEGORY_ORDER.find(
-          (category) => specialistsPayload.scores[category] !== null,
-        );
-        if (fallbackCategory) {
-          setSelectedCategory(fallbackCategory);
-        }
-      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unknown dashboard error.");
     } finally {
@@ -616,7 +760,8 @@ export function TerminalDashboard() {
     [scores, selectedCategory, selectedDataset, specialists],
   );
 
-  const selectedSpecialist = specialists?.scores[selectedCategory] ?? null;
+  const selectedSpecialist =
+    specialists?.scores[selectedCategory] ?? getDemoSpecialist(selectedCategory);
   const sourceInspectorDataset =
     isSourceInspectorOpen && selectedDataset?.id === selectedDatasetId ? selectedDataset : null;
   const sourceInspectorMetrics = sourceInspectorDataset?.summary?.key_metrics ?? {};
@@ -625,7 +770,7 @@ export function TerminalDashboard() {
         (left, right) => right[1].final_score - left[1].final_score,
       )
     : [];
-  const recentChatEntries = chatHistory.slice(-6);
+  const recentChatEntries = chatHistory.length ? chatHistory.slice(-6) : [DEMO_CHAT_PREVIEW];
 
   useEffect(() => {
     const nextScore = scores?.scores[selectedCategory];
@@ -831,11 +976,12 @@ export function TerminalDashboard() {
                 key={attachment.artifact_id}
                 className="chat-attachment"
                 href={resolveApiUrl(attachment.download_url)}
-                download={attachment.filename}
+                rel="noreferrer"
+                target="_blank"
               >
                 <div className="chat-attachment-top">
                   <strong>{attachment.label}</strong>
-                  <span>Download Clip</span>
+                  <span>Open Clip</span>
                 </div>
                 <div className="chat-attachment-meta">
                   <span>{attachment.filename}</span>
@@ -1139,40 +1285,29 @@ export function TerminalDashboard() {
     setChatHistory(nextHistory);
     setChatDraft("");
     setIsChatting(true);
-    appendProcessEntry(`planner chat query -> ${message}`, "info");
+    appendProcessEntry(`demo chat prompt received -> ${message}`, "info");
 
     try {
-      const payload = await fetchJson<AgentChatResponse>("/agent/chat", {
-        method: "POST",
-        body: JSON.stringify({
-          message,
-          history: nextHistory
-            .slice(0, -1)
-            .map((item) => ({ role: item.role, content: item.content })),
-        }),
-      });
-
+      await sleep(550);
       setChatHistory((current) => [
         ...current,
         {
           role: "assistant",
-          content: payload.response,
-          toolCalls: payload.tool_calls,
-          reasoningTrace: payload.reasoning_trace,
-          attachments: payload.attachments,
+          content: DEMO_ASSISTANT_RESPONSE,
+          attachments: [
+            {
+              artifact_id: "demo-er-watch-webm",
+              kind: "video",
+              label: DEMO_VIDEO_LABEL,
+              filename: DEMO_VIDEO_FILENAME,
+              content_type: "video/webm",
+              download_url: DEMO_VIDEO_PATH,
+              source_ref: "ER Watch source clip bundled with the frontend demo",
+            },
+          ],
         },
       ]);
-      appendProcessEntry(
-        `planner chat response received | steps=${payload.reasoning_trace.length} | tools=${payload.tool_calls.map((tool) => tool.name).join(", ") || "none"}`,
-        "success",
-      );
-      payload.reasoning_trace.forEach((step) => {
-        appendProcessEntry(`chat step ${step.step} -> ${step.title}`, "info");
-      });
-    } catch (chatError) {
-      const messageText = chatError instanceof Error ? chatError.message : "Chat request failed.";
-      setError(messageText);
-      appendProcessEntry(`planner chat failure | ${messageText}`, "warn");
+      appendProcessEntry("demo chat response rendered with ER Watch source clip", "success");
     } finally {
       setIsChatting(false);
     }
@@ -1236,16 +1371,16 @@ export function TerminalDashboard() {
             <h1>WATERLOO REGION 1 MILLION DASHBOARD</h1>
           </div>
           <div className="hero-meta">
-            <span>{isLoading ? "BOOTING" : "LIVE"}</span>
-            <span>{isRefreshing ? "SYNCING" : "IDLE"}</span>
-            <span>{formatTimestamp(specialists?.last_updated ?? scores?.last_updated)}</span>
+            <span>{DEMO_STATUS.mode}</span>
+            <span>{DEMO_STATUS.sync}</span>
+            <span>{DEMO_STATUS.timestamp}</span>
           </div>
         </header>
 
         <section className="ticker">
-          <span>DATASETS {scores?.dataset_count ?? "--"}</span>
-          <span>API {API_BASE_URL}</span>
-          <span>SPECIALIST RUNS {Object.values(specialists?.scores ?? {}).filter(Boolean).length}</span>
+          <span>DATASETS {DEMO_STATUS.datasets}</span>
+          <span>API {DEMO_STATUS.apiBase}</span>
+          <span>SPECIALIST RUNS {DEMO_STATUS.specialistRuns}</span>
           <span>DISPLAY MODE TERMINAL</span>
         </section>
 
@@ -1307,8 +1442,26 @@ export function TerminalDashboard() {
 
         <section className="score-grid">
           {CATEGORY_ORDER.map((category) => {
-            const aggregate = scores?.scores[category];
-            const specialist = specialists?.scores[category];
+            const demoValue = getCategoryDemoValue(category);
+            const aggregate = scores?.scores[category] ?? demoValue?.aggregate;
+            const specialist = specialists?.scores[category] ?? (
+              demoValue
+                ? {
+                    id: `demo-${category}`,
+                    category,
+                    agent_name: `${category}_specialist_agent`,
+                    score: demoValue.specialistScore,
+                    status_label: demoValue.statusLabel,
+                    confidence: 0.6,
+                    rationale: "",
+                    benchmark_highlights: [],
+                    recommendations: [],
+                    supporting_evidence: [],
+                    source_dataset_ids: [],
+                    created_at: null,
+                  }
+                : null
+            );
             const isActive = selectedCategory === category;
 
             return (
@@ -1359,26 +1512,19 @@ export function TerminalDashboard() {
                 <span>created</span>
               </div>
 
-              {datasets?.items.map((item) => (
+              {DEMO_REGISTRY_ITEMS.map((item) => (
                 <button
                   key={item.id}
-                  className={`dataset-row${selectedDatasetId === item.id ? " dataset-row-active" : ""}`}
-                  onClick={() => {
-                    setIsEditingInspectorName(false);
-                    setIsSourceInspectorOpen(false);
-                    setIsChatWorkspaceOpen(false);
-                    setSelectedDatasetId(item.id);
-                  }}
+                  className="dataset-row"
+                  onClick={() => {}}
                   type="button"
                 >
                   <span title={item.source_ref}>{item.source_ref}</span>
                   <span>{item.input_type}</span>
                   <span>{item.status}</span>
-                  <span>{formatTimestamp(item.created_at)}</span>
+                  <span>{item.created_at}</span>
                 </button>
               ))}
-
-              {!datasets?.items.length && <div className="dataset-empty">No datasets available.</div>}
             </div>
           </div>
 
@@ -1536,11 +1682,11 @@ export function TerminalDashboard() {
               <div className="chat-workspace">
                 <div className="chat-workspace-top">
                   <div className="chat-workspace-heading">
-                    <span>Central agent workspace</span>
+                    <span>Demo chat workspace</span>
                     <strong>
                       {chatHistory.length
-                        ? "Live conversation with visible reasoning and tool activity"
-                        : "Start a conversation to inspect model reasoning"}
+                        ? "Demo response loaded for the transportation and ER Watch prompt"
+                        : "Type in the box below to trigger the scripted demo response"}
                     </strong>
                   </div>
                   <button
@@ -1553,22 +1699,28 @@ export function TerminalDashboard() {
                   </button>
                 </div>
 
+                <div className="demo-chat-notice">
+                  <span>DEMO</span>
+                  <strong>This is a demo.</strong>
+                  <p>Responses are explicitly tailored for: "{DEMO_PROMPT}"</p>
+                </div>
+
                 <div className="chat-thread chat-thread-workspace">
                   {chatHistory.length ? (
                     chatHistory.map((entry, index) => renderChatEntry(entry, index, "workspace"))
                   ) : (
                     <div className="dataset-empty">
-                      Ask the planning agent about weak categories, evidence, or recommended interventions.
+                      Enter any message to render the scripted transportation explanation and ER Watch source clip.
                     </div>
                   )}
 
                   {isChatting ? (
                     <article className="chat-bubble chat-bubble-assistant chat-bubble-workspace">
                       <div className="chat-role">assistant</div>
-                      <p>Thinking through your request and preparing any tool calls needed to answer it.</p>
+                      <p>Preparing the demo response for the transportation and ER Watch walkthrough.</p>
                       <div className="chat-thinking">
-                        <span>Reasoning in progress</span>
-                        <span>Tool activity will appear here when the response returns</span>
+                        <span>Demo response in progress</span>
+                        <span>Scripted output will appear here when ready</span>
                       </div>
                     </article>
                   ) : null}
@@ -1584,7 +1736,7 @@ export function TerminalDashboard() {
                         void sendChatMessage();
                       }
                     }}
-                    placeholder="Ask the central planning agent..."
+                    placeholder={`Demo prompt target: ${DEMO_PROMPT}`}
                     rows={4}
                     value={chatDraft}
                   />
@@ -1785,26 +1937,23 @@ export function TerminalDashboard() {
           <div className="panel sources-panel">
             <div className="panel-header">
               <span>RELEVANT SOURCES</span>
-              <span className="panel-subtle">{selectedCategory.toUpperCase()} RELEVANCE</span>
+              <span className="panel-subtle">HEALTHCARE RELEVANCE</span>
             </div>
 
             <div className="sources-stack">
               <div className="sources-list">
-                {relevantSources.length ? (
-                  relevantSources.map((source) => (
+                {DEMO_RELEVANT_SOURCES.map((source) => (
                     <button
                       key={source.id}
                       className="source-card"
                       onClick={() => {
                         setIsEditingInspectorName(false);
                         setIsChatWorkspaceOpen(false);
-                        setSelectedDatasetId(source.id);
-                        setIsSourceInspectorOpen(true);
                       }}
                       type="button"
                     >
                       <div className="source-card-top">
-                        <strong>{source.title ?? truncateMiddle(source.source_ref, 52)}</strong>
+                        <strong>{source.title}</strong>
                         <span>{source.input_type}</span>
                       </div>
                       <p>
@@ -1817,10 +1966,7 @@ export function TerminalDashboard() {
                         <span>{formatTimestamp(source.created_at)}</span>
                       </div>
                     </button>
-                  ))
-                ) : (
-                  <div className="dataset-empty">No relevant datasets found for the selected category.</div>
-                )}
+                  ))}
               </div>
             </div>
           </div>
@@ -1829,14 +1975,20 @@ export function TerminalDashboard() {
             <div className="panel-header">
               <span>CHAT LAUNCHER</span>
               <span className="panel-subtle">
-                {isChatWorkspaceOpen ? "WORKSPACE OPEN" : "OPEN IN INTELLIGENCE PANE"}
+                {isChatWorkspaceOpen ? "DEMO WORKSPACE OPEN" : "OPEN IN INTELLIGENCE PANE"}
               </span>
             </div>
 
             <div className="chat-launcher">
+              <div className="demo-chat-notice demo-chat-notice-compact">
+                <span>DEMO</span>
+                <strong>Scripted response</strong>
+                <p>Tailored for: "{DEMO_PROMPT}"</p>
+              </div>
+
               <div className="chat-launcher-status">
-                <span>{chatHistory.length ? `${chatHistory.length} messages` : "No active chat yet"}</span>
-                <span>{isChatting ? "Model thinking" : isChatWorkspaceOpen ? "Workspace active" : "Workspace closed"}</span>
+                <span>{chatHistory.length ? `${chatHistory.length} messages` : "2 messages"}</span>
+                <span>{isChatting ? "Demo replying" : isChatWorkspaceOpen ? "Workspace active" : "Workspace closed"}</span>
               </div>
 
               <button
@@ -1844,26 +1996,20 @@ export function TerminalDashboard() {
                 onClick={openChatWorkspace}
                 type="button"
               >
-                {chatHistory.length ? "OPEN CHAT WORKSPACE" : "START CHAT IN MAIN PANE"}
+                OPEN CHAT WORKSPACE
               </button>
 
               <div className="chat-thread chat-thread-preview">
-                {recentChatEntries.length ? (
-                  recentChatEntries.map((entry, index) => (
-                    <button
-                      key={`preview-${entry.role}-${index}`}
-                      className="chat-preview-trigger"
-                      onClick={openChatWorkspace}
-                      type="button"
-                    >
-                      {renderChatEntry(entry, index, "preview")}
-                    </button>
-                  ))
-                ) : (
-                  <div className="dataset-empty">
-                    Open the chat workspace to talk with the central agent and inspect its reasoning.
-                  </div>
-                )}
+                {recentChatEntries.map((entry, index) => (
+                  <button
+                    key={`preview-${entry.role}-${index}`}
+                    className="chat-preview-trigger"
+                    onClick={openChatWorkspace}
+                    type="button"
+                  >
+                    {renderChatEntry(entry, index, "preview")}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
